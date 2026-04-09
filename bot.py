@@ -122,27 +122,33 @@ PRODUCTS = [
     }
 ]
 
+
 def get_product_by_id(product_id: int):
     return next((p for p in PRODUCTS if p["id"] == product_id), None)
+
 
 def filter_by_budget(min_price: int, max_price: int):
     return [p for p in PRODUCTS if min_price <= p["price"] <= max_price]
 
+
 def filter_by_shots(min_shots: int, max_shots: int):
     return [p for p in PRODUCTS if min_shots <= p["shots"] <= max_shots]
+
 
 def top_products():
     return [p for p in PRODUCTS if p.get("top")]
 
+
 def main_menu():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("🔥 Каталог", callback_data="catalog")],
-        [InlineKeyboardButton("💰 По бюджету", callback_data="budget")],
-        [InlineKeyboardButton("🎆 По залпам", callback_data="shots")],
+        [InlineKeyboardButton("💰 По бюджету", callback_data="budget_menu")],
+        [InlineKeyboardButton("🎆 По залпам", callback_data="shots_menu")],
         [InlineKeyboardButton("⭐ Топ", callback_data="top")],
         [InlineKeyboardButton("📍 Как нас найти", callback_data="location")],
         [InlineKeyboardButton("📞 Связаться", callback_data="contact")]
     ])
+
 
 def products_menu(products, back_callback="home"):
     rows = []
@@ -159,24 +165,27 @@ def products_menu(products, back_callback="home"):
     ])
     return InlineKeyboardMarkup(rows)
 
+
 def budget_menu():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("До 5 000₸", callback_data="budget_0_5000")],
-        [InlineKeyboardButton("5 000 – 10 000₸", callback_data="budget_5000_10000")],
-        [InlineKeyboardButton("10 000 – 20 000₸", callback_data="budget_10000_20000")],
-        [InlineKeyboardButton("20 000 – 40 000₸", callback_data="budget_20000_40000")],
-        [InlineKeyboardButton("40 000₸ и выше", callback_data="budget_40000_999999")],
+        [InlineKeyboardButton("До 5 000₸", callback_data="budget|0|5000")],
+        [InlineKeyboardButton("5 000 – 10 000₸", callback_data="budget|5000|10000")],
+        [InlineKeyboardButton("10 000 – 20 000₸", callback_data="budget|10000|20000")],
+        [InlineKeyboardButton("20 000 – 40 000₸", callback_data="budget|20000|40000")],
+        [InlineKeyboardButton("40 000₸ и выше", callback_data="budget|40000|999999")],
         [InlineKeyboardButton("🏠 Домой", callback_data="home")]
     ])
 
+
 def shots_menu():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("До 10 залпов", callback_data="shots_0_10")],
-        [InlineKeyboardButton("11 – 25 залпов", callback_data="shots_11_25")],
-        [InlineKeyboardButton("26 – 50 залпов", callback_data="shots_26_50")],
-        [InlineKeyboardButton("51 и больше", callback_data="shots_51_999")],
+        [InlineKeyboardButton("До 10 залпов", callback_data="shots|0|10")],
+        [InlineKeyboardButton("11 – 25 залпов", callback_data="shots|11|25")],
+        [InlineKeyboardButton("26 – 50 залпов", callback_data="shots|26|50")],
+        [InlineKeyboardButton("51 и больше", callback_data="shots|51|999")],
         [InlineKeyboardButton("🏠 Домой", callback_data="home")]
     ])
+
 
 def location_menu():
     return InlineKeyboardMarkup([
@@ -184,12 +193,14 @@ def location_menu():
         [InlineKeyboardButton("🏠 Домой", callback_data="home")]
     ])
 
+
 def contact_menu():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("📞 Позвонить", url=SHOP_PHONE_LINK)],
         [InlineKeyboardButton("💬 WhatsApp", url=SHOP_WHATSAPP)],
         [InlineKeyboardButton("🏠 Домой", callback_data="home")]
     ])
+
 
 def product_buttons(product, back_callback="catalog"):
     rows = []
@@ -203,47 +214,49 @@ def product_buttons(product, back_callback="catalog"):
     ])
     return InlineKeyboardMarkup(rows)
 
-def resolve_photo(path: str):
-    if path and os.path.exists(path):
-        return path
-    if os.path.exists(BANNER_FILE):
-        return BANNER_FILE
-    return None
 
-async def send_photo_message(target, photo_path: str, caption: str, reply_markup):
-    with open(photo_path, "rb") as photo:
-        await target.reply_photo(photo=photo, caption=caption, reply_markup=reply_markup)
+def file_exists(path: str):
+    return bool(path and os.path.exists(path))
 
-async def edit_or_send_photo(query, photo_path: str, caption: str, reply_markup):
-    try:
-        with open(photo_path, "rb") as photo:
-            media = InputMediaPhoto(media=photo, caption=caption)
-            await query.edit_message_media(media=media, reply_markup=reply_markup)
-    except:
-        try:
-            await query.edit_message_caption(caption=caption, reply_markup=reply_markup)
-        except:
-            await send_photo_message(query.message, photo_path, caption, reply_markup)
 
-async def edit_or_send_text(query, text: str, reply_markup):
+async def edit_text_fallback(query, text: str, reply_markup):
     try:
         await query.edit_message_text(text=text, reply_markup=reply_markup)
     except:
         await query.message.reply_text(text=text, reply_markup=reply_markup)
 
+
+async def edit_photo_or_text(query, photo_path: str, caption: str, reply_markup):
+    if file_exists(photo_path):
+        try:
+            with open(photo_path, "rb") as photo:
+                media = InputMediaPhoto(media=photo, caption=caption)
+                await query.edit_message_media(media=media, reply_markup=reply_markup)
+            return
+        except:
+            try:
+                await query.edit_message_caption(caption=caption, reply_markup=reply_markup)
+                return
+            except:
+                pass
+
+    await edit_text_fallback(query, caption, reply_markup)
+
+
 async def show_home_from_callback(query):
-    photo_path = resolve_photo(BANNER_FILE)
-    if photo_path:
-        await edit_or_send_photo(query, photo_path, SHOP_TEXT, main_menu())
+    if file_exists(BANNER_FILE):
+        await edit_photo_or_text(query, BANNER_FILE, SHOP_TEXT, main_menu())
     else:
-        await edit_or_send_text(query, SHOP_TEXT, main_menu())
+        await edit_text_fallback(query, SHOP_TEXT, main_menu())
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    photo_path = resolve_photo(BANNER_FILE)
-    if photo_path:
-        await send_photo_message(update.message, photo_path, SHOP_TEXT, main_menu())
+    if file_exists(BANNER_FILE):
+        with open(BANNER_FILE, "rb") as photo:
+            await update.message.reply_photo(photo=photo, caption=SHOP_TEXT, reply_markup=main_menu())
     else:
         await update.message.reply_text(SHOP_TEXT, reply_markup=main_menu())
+
 
 async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -255,54 +268,59 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if data == "catalog":
-        await edit_or_send_text(query, "🔥 Каталог товаров:", products_menu(PRODUCTS, "home"))
+        await edit_text_fallback(query, "🔥 Каталог товаров:", products_menu(PRODUCTS, "home"))
         return
 
-    if data == "budget":
-        await edit_or_send_text(query, "💰 Выберите бюджет:", budget_menu())
+    if data == "budget_menu":
+        await edit_text_fallback(query, "💰 Выберите бюджет:", budget_menu())
         return
 
-    if data.startswith("budget_"):
-        _, min_price, max_price = data.split("_")
+    if data.startswith("budget|"):
+        _, min_price, max_price = data.split("|")
         items = filter_by_budget(int(min_price), int(max_price))
+
         if not items:
-            await edit_or_send_text(query, "По этому бюджету товаров пока нет.", budget_menu())
+            await edit_text_fallback(query, "По этому бюджету товаров пока нет.", budget_menu())
             return
-        await edit_or_send_text(query, "💰 Подходящие варианты:", products_menu(items, "budget"))
+
+        await edit_text_fallback(query, "💰 Подходящие варианты:", products_menu(items, "budget_menu"))
         return
 
-    if data == "shots":
-        await edit_or_send_text(query, "🎆 Выберите количество залпов:", shots_menu())
+    if data == "shots_menu":
+        await edit_text_fallback(query, "🎆 Выберите количество залпов:", shots_menu())
         return
 
-    if data.startswith("shots_"):
-        _, min_shots, max_shots = data.split("_")
+    if data.startswith("shots|"):
+        _, min_shots, max_shots = data.split("|")
         items = filter_by_shots(int(min_shots), int(max_shots))
+
         if not items:
-            await edit_or_send_text(query, "По этому количеству залпов товаров пока нет.", shots_menu())
+            await edit_text_fallback(query, "По этому количеству залпов товаров пока нет.", shots_menu())
             return
-        await edit_or_send_text(query, "🎆 Подходящие варианты:", products_menu(items, "shots"))
+
+        await edit_text_fallback(query, "🎆 Подходящие варианты:", products_menu(items, "shots_menu"))
         return
 
     if data == "top":
-        await edit_or_send_text(query, "⭐ Топ товары:", products_menu(top_products(), "home"))
+        await edit_text_fallback(query, "⭐ Топ товары:", products_menu(top_products(), "home"))
         return
 
     if data == "location":
         text = f"📍 Наш магазин\n\n{SHOP_ADDRESS_TEXT}\n\nНажмите кнопку ниже:"
-        await edit_or_send_text(query, text, location_menu())
+        await edit_text_fallback(query, text, location_menu())
         return
 
     if data == "contact":
         text = f"📞 Связаться с нами\n\n{SHOP_PHONE}\n\nВыберите удобный способ:"
-        await edit_or_send_text(query, text, contact_menu())
+        await edit_text_fallback(query, text, contact_menu())
         return
 
     if data.startswith("product_"):
         product_id = int(data.split("_")[1])
         product = get_product_by_id(product_id)
+
         if not product:
-            await edit_or_send_text(query, "Товар не найден.", main_menu())
+            await edit_text_fallback(query, "Товар не найден.", main_menu())
             return
 
         caption = (
@@ -312,12 +330,14 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f'📏 Калибр: {product["caliber"]}'
         )
 
-        photo_path = resolve_photo(product.get("photo", ""))
-        if photo_path:
-            await edit_or_send_photo(query, photo_path, caption, product_buttons(product, "catalog"))
-        else:
-            await edit_or_send_text(query, caption, product_buttons(product, "catalog"))
+        await edit_photo_or_text(
+            query,
+            product.get("photo", ""),
+            caption,
+            product_buttons(product, "catalog")
+        )
         return
+
 
 def main():
     if not BOT_TOKEN or BOT_TOKEN == "ВСТАВЬ_СЮДА_СВОЙ_ТОКЕН":
@@ -329,6 +349,7 @@ def main():
 
     print("Бот запущен...")
     app.run_polling(drop_pending_updates=True)
+
 
 if __name__ == "__main__":
     main()
