@@ -4,7 +4,23 @@ import os
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8660444999:AAEQkb-iwqFR-YI821DyhK84DYtxvscjXpE")
 
-SHOP_TEXT = "🔥 Магазин пиротехники AYP\n\nВыберите раздел:"
+SHOP_NAME = "AYP"
+SHOP_TITLE = "🔥 AYP FIREWORKS"
+SHOP_TEXT = (
+    "🔥 AYP FIREWORKS\n\n"
+    "🎆 Салюты для любого праздника\n"
+    "💰 Подбор по бюджету\n"
+    "🚀 Быстрый и удобный выбор\n\n"
+    "Выберите раздел:"
+)
+
+SHOP_ADDRESS_TEXT = "AYP, Алматы"
+SHOP_2GIS = "https://2gis.kz/almaty/geo/70000001103431846"
+SHOP_PHONE = "+7 776 599 99 19"
+SHOP_PHONE_LINK = "tel:+77765999919"
+SHOP_WHATSAPP = "https://wa.me/77765999919"
+
+BANNER_FILE = "banner.jpg"
 
 PRODUCTS = [
     {
@@ -108,14 +124,33 @@ PRODUCTS = [
     }
 ]
 
+
+def get_product_by_id(product_id: int):
+    return next((p for p in PRODUCTS if p["id"] == product_id), None)
+
+
+def filter_by_budget(min_price: int, max_price: int):
+    return [p for p in PRODUCTS if min_price <= p["price"] <= max_price]
+
+
+def filter_by_shots(min_shots: int, max_shots: int):
+    return [p for p in PRODUCTS if min_shots <= p["shots"] <= max_shots]
+
+
+def top_products():
+    return [p for p in PRODUCTS if p.get("top")]
+
+
 def main_menu():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("🔥 Каталог", callback_data="catalog")],
         [InlineKeyboardButton("💰 По бюджету", callback_data="budget")],
         [InlineKeyboardButton("🎆 По залпам", callback_data="shots")],
         [InlineKeyboardButton("⭐ Топ", callback_data="top")],
-        [InlineKeyboardButton("📞 Контакты", callback_data="contacts")]
+        [InlineKeyboardButton("📍 Как нас найти", callback_data="location")],
+        [InlineKeyboardButton("📞 Связаться", callback_data="contact")]
     ])
+
 
 def products_menu(products, back_callback="home"):
     rows = []
@@ -126,8 +161,12 @@ def products_menu(products, back_callback="home"):
                 callback_data=f'product_{p["id"]}'
             )
         ])
-    rows.append([InlineKeyboardButton("⬅️ Назад", callback_data=back_callback)])
+    rows.append([
+        InlineKeyboardButton("⬅️ Назад", callback_data=back_callback),
+        InlineKeyboardButton("🏠 Домой", callback_data="home")
+    ])
     return InlineKeyboardMarkup(rows)
+
 
 def budget_menu():
     return InlineKeyboardMarkup([
@@ -136,8 +175,9 @@ def budget_menu():
         [InlineKeyboardButton("10 000 – 20 000₸", callback_data="budget_10000_20000")],
         [InlineKeyboardButton("20 000 – 40 000₸", callback_data="budget_20000_40000")],
         [InlineKeyboardButton("40 000₸ и выше", callback_data="budget_40000_999999")],
-        [InlineKeyboardButton("⬅️ Назад", callback_data="home")]
+        [InlineKeyboardButton("🏠 Домой", callback_data="home")]
     ])
+
 
 def shots_menu():
     return InlineKeyboardMarkup([
@@ -145,10 +185,26 @@ def shots_menu():
         [InlineKeyboardButton("11 – 25 залпов", callback_data="shots_11_25")],
         [InlineKeyboardButton("26 – 50 залпов", callback_data="shots_26_50")],
         [InlineKeyboardButton("51 и больше", callback_data="shots_51_999")],
-        [InlineKeyboardButton("⬅️ Назад", callback_data="home")]
+        [InlineKeyboardButton("🏠 Домой", callback_data="home")]
     ])
 
-def product_buttons(product):
+
+def location_menu():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("📍 Открыть в 2GIS", url=SHOP_2GIS)],
+        [InlineKeyboardButton("🏠 Домой", callback_data="home")]
+    ])
+
+
+def contact_menu():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("📞 Позвонить", url=SHOP_PHONE_LINK)],
+        [InlineKeyboardButton("💬 WhatsApp", url=SHOP_WHATSAPP)],
+        [InlineKeyboardButton("🏠 Домой", callback_data="home")]
+    ])
+
+
+def product_buttons(product, back_callback="catalog"):
     rows = []
 
     if product.get("kaspi"):
@@ -157,28 +213,54 @@ def product_buttons(product):
     if product.get("video"):
         rows.append([InlineKeyboardButton("🎥 Смотреть видео", url=product["video"])])
 
-    rows.append([InlineKeyboardButton("⬅️ Назад", callback_data="catalog")])
+    rows.append([
+        InlineKeyboardButton("⬅️ Назад", callback_data=back_callback),
+        InlineKeyboardButton("🏠 Домой", callback_data="home")
+    ])
     return InlineKeyboardMarkup(rows)
 
-def get_product_by_id(product_id):
-    return next((p for p in PRODUCTS if p["id"] == product_id), None)
 
-def filter_by_budget(min_price, max_price):
-    return [p for p in PRODUCTS if min_price <= p["price"] <= max_price]
+async def send_new_text(chat_id: int, bot, text: str, markup):
+    return await bot.send_message(chat_id=chat_id, text=text, reply_markup=markup)
 
-def filter_by_shots(min_shots, max_shots):
-    return [p for p in PRODUCTS if min_shots <= p["shots"] <= max_shots]
 
-def top_products():
-    return [p for p in PRODUCTS if p.get("top")]
+async def send_new_photo(chat_id: int, bot, photo_path: str, caption: str, markup):
+    with open(photo_path, "rb") as photo:
+        return await bot.send_photo(chat_id=chat_id, photo=photo, caption=caption, reply_markup=markup)
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        SHOP_TEXT,
-        reply_markup=main_menu()
-    )
 
-async def show_product_card(query, product):
+async def replace_with_text(query, text: str, markup):
+    chat_id = query.message.chat_id
+    try:
+        await query.message.delete()
+    except:
+        pass
+    await send_new_text(chat_id, query.bot, text, markup)
+
+
+async def replace_with_photo(query, photo_path: str, caption: str, markup):
+    chat_id = query.message.chat_id
+    try:
+        await query.message.delete()
+    except:
+        pass
+    try:
+        await send_new_photo(chat_id, query.bot, photo_path, caption, markup)
+    except:
+        await send_new_text(chat_id, query.bot, caption, markup)
+
+
+async def show_home(chat_id: int, bot):
+    if os.path.exists(BANNER_FILE):
+        try:
+            await send_new_photo(chat_id, bot, BANNER_FILE, SHOP_TEXT, main_menu())
+            return
+        except:
+            pass
+    await send_new_text(chat_id, bot, SHOP_TEXT, main_menu())
+
+
+async def show_product(query, product, back_callback="catalog"):
     caption = (
         f'🔥 {product["name"]}\n\n'
         f'💰 Цена: {product["price"]}₸\n'
@@ -186,22 +268,16 @@ async def show_product_card(query, product):
         f'📏 Калибр: {product["caliber"]}'
     )
 
-    if product.get("photo"):
-        try:
-            with open(product["photo"], "rb") as photo:
-                await query.message.reply_photo(
-                    photo=photo,
-                    caption=caption,
-                    reply_markup=product_buttons(product)
-                )
-            return
-        except:
-            pass
+    photo_path = product.get("photo", "").strip()
+    if photo_path and os.path.exists(photo_path):
+        await replace_with_photo(query, photo_path, caption, product_buttons(product, back_callback))
+    else:
+        await replace_with_text(query, caption, product_buttons(product, back_callback))
 
-    await query.message.reply_text(
-        caption,
-        reply_markup=product_buttons(product)
-    )
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await show_home(update.effective_chat.id, context.bot)
+
 
 async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -209,24 +285,15 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = query.data
 
     if data == "home":
-        await query.message.reply_text(
-            SHOP_TEXT,
-            reply_markup=main_menu()
-        )
+        await replace_with_text(query, SHOP_TEXT, main_menu())
         return
 
     if data == "catalog":
-        await query.message.reply_text(
-            "🔥 Каталог товаров:",
-            reply_markup=products_menu(PRODUCTS, "home")
-        )
+        await replace_with_text(query, "🔥 Каталог товаров:", products_menu(PRODUCTS, "home"))
         return
 
     if data == "budget":
-        await query.message.reply_text(
-            "💰 Выберите бюджет:",
-            reply_markup=budget_menu()
-        )
+        await replace_with_text(query, "💰 Выберите бюджет:", budget_menu())
         return
 
     if data.startswith("budget_"):
@@ -234,23 +301,14 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         items = filter_by_budget(int(min_price), int(max_price))
 
         if not items:
-            await query.message.reply_text(
-                "По этому бюджету товаров пока нет.",
-                reply_markup=budget_menu()
-            )
+            await replace_with_text(query, "По этому бюджету товаров пока нет.", budget_menu())
             return
 
-        await query.message.reply_text(
-            "💰 Подходящие варианты:",
-            reply_markup=products_menu(items, "budget")
-        )
+        await replace_with_text(query, "💰 Подходящие варианты:", products_menu(items, "budget"))
         return
 
     if data == "shots":
-        await query.message.reply_text(
-            "🎆 Выберите количество залпов:",
-            reply_markup=shots_menu()
-        )
+        await replace_with_text(query, "🎆 Выберите количество залпов:", shots_menu())
         return
 
     if data.startswith("shots_"):
@@ -258,35 +316,24 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         items = filter_by_shots(int(min_shots), int(max_shots))
 
         if not items:
-            await query.message.reply_text(
-                "По этому количеству залпов товаров пока нет.",
-                reply_markup=shots_menu()
-            )
+            await replace_with_text(query, "По этому количеству залпов товаров пока нет.", shots_menu())
             return
 
-        await query.message.reply_text(
-            "🎆 Подходящие варианты:",
-            reply_markup=products_menu(items, "shots")
-        )
+        await replace_with_text(query, "🎆 Подходящие варианты:", products_menu(items, "shots"))
         return
 
     if data == "top":
-        await query.message.reply_text(
-            "⭐ Топ товары:",
-            reply_markup=products_menu(top_products(), "home")
-        )
+        await replace_with_text(query, "⭐ Топ товары:", products_menu(top_products(), "home"))
         return
 
-    if data == "contacts":
-        await query.message.reply_text(
-            "📞 Контакты\n\n"
-            "AYP Fireworks Shop\n"
-            "📍 Алматы\n"
-            "📱 +7 777 000 00 00",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("⬅️ Назад", callback_data="home")]
-            ])
-        )
+    if data == "location":
+        text = f"📍 Наш магазин\n\n{SHOP_ADDRESS_TEXT}\n\nНажмите кнопку ниже:"
+        await replace_with_text(query, text, location_menu())
+        return
+
+    if data == "contact":
+        text = f"📞 Связаться с нами\n\n{SHOP_PHONE}\n\nВыберите удобный способ:"
+        await replace_with_text(query, text, contact_menu())
         return
 
     if data.startswith("product_"):
@@ -294,11 +341,12 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         product = get_product_by_id(product_id)
 
         if not product:
-            await query.message.reply_text("Товар не найден.")
+            await replace_with_text(query, "Товар не найден.", main_menu())
             return
 
-        await show_product_card(query, product)
+        await show_product(query, product, "catalog")
         return
+
 
 def main():
     if not BOT_TOKEN or BOT_TOKEN == "ВСТАВЬ_СЮДА_СВОЙ_ТОКЕН":
@@ -310,6 +358,7 @@ def main():
 
     print("Бот запущен...")
     app.run_polling(drop_pending_updates=True)
+
 
 if __name__ == "__main__":
     main()
