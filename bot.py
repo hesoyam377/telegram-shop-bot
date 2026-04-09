@@ -1,13 +1,13 @@
+import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
-import os
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8660444999:AAEQkb-iwqFR-YI821DyhK84DYtxvscjXpE")
 
 SHOP_TEXT = (
     "🔥 AYP FIREWORKS\n\n"
     "🎆 Салюты для любого праздника\n"
-    "💰 Подбор по бюджету\n"
+    "💰 Подбор по цене\n"
     "🚀 Быстрый и удобный выбор\n\n"
     "Выберите раздел:"
 )
@@ -15,7 +15,7 @@ SHOP_TEXT = (
 SHOP_ADDRESS_TEXT = "AYP, Алматы"
 SHOP_2GIS = "https://2gis.kz/almaty/geo/70000001103431846"
 SHOP_PHONE = "+7 776 599 99 19"
-SHOP_PHONE_LINK = "tel:+77765999919"
+SHOP_PHONE_LINK = "https://wa.me/77765999919?text=%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82%2C%20%D1%85%D0%BE%D1%87%D1%83%20%D1%83%D1%82%D0%BE%D1%87%D0%BD%D0%B8%D1%82%D1%8C%20%D0%BF%D0%BE%20%D1%81%D0%B0%D0%BB%D1%8E%D1%82%D0%B0%D0%BC"
 SHOP_WHATSAPP = "https://wa.me/77765999919"
 
 BANNER_FILE = "banner.jpg"
@@ -30,7 +30,7 @@ PRODUCTS = [
         "kaspi": "https://kaspi.kz/shop/p/ayp-batareja-saljutov-don633-zalpov-25-142100320/?c=750000000&sr=4&ref=shared_link",
         "video": "https://youtu.be/94W5GZ6aiAE?si=wnmn0wFhMjZ34k_C",
         "photo": "dragon.jpg",
-        "top": True
+        "top": True,
     },
     {
         "id": 2,
@@ -41,7 +41,7 @@ PRODUCTS = [
         "kaspi": "https://kaspi.kz/shop/p/-raduzhnyi-vzryv-36-zalpov-142101625/?c=750000000&sr=3&ref=shared_link",
         "video": "https://youtu.be/7hQPtWXfxWU?si=1rDx-fR1-_t-hPpK",
         "photo": "raduzhnyi_vzryv.jpg",
-        "top": True
+        "top": True,
     },
     {
         "id": 3,
@@ -52,7 +52,7 @@ PRODUCTS = [
         "kaspi": "https://kaspi.kz/shop/p/ayp-batareja-saljutov-don623-zalpov-49-142100621/?c=750000000&sr=5&ref=shared_link",
         "video": "https://youtu.be/lDoNccOoTc8?si=ZSricMqa_xCgE_mY",
         "photo": "salyut_udachi.jpg",
-        "top": True
+        "top": True,
     },
     {
         "id": 4,
@@ -63,7 +63,7 @@ PRODUCTS = [
         "kaspi": "https://kaspi.kz/shop/p/raushan-19zarjadov-151817404/?c=750000000&sr=4&ref=shared_link",
         "video": "https://youtu.be/WmKQ2sxRJWY?si=DNgxoKmDTrGskfzw",
         "photo": "raushan.jpg",
-        "top": False
+        "top": False,
     },
     {
         "id": 5,
@@ -74,7 +74,7 @@ PRODUCTS = [
         "kaspi": "https://kaspi.kz/shop/p/sholpanai-7zarjadov-151695092/?c=750000000&sr=1&ref=shared_link",
         "video": "",
         "photo": "sholpanai.jpg",
-        "top": False
+        "top": False,
     },
     {
         "id": 6,
@@ -85,7 +85,7 @@ PRODUCTS = [
         "kaspi": "https://kaspi.kz/shop/p/godovoi-uspeh-138-zalp-142387958/?c=750000000&sr=2&ref=shared_link",
         "video": "https://youtu.be/5vvYlOYhHnQ?si=BeQHZ5q6Yxy3opxX",
         "photo": "godovoi_uspeh.jpg",
-        "top": True
+        "top": True,
     },
     {
         "id": 7,
@@ -96,7 +96,7 @@ PRODUCTS = [
         "kaspi": "https://kaspi.kz/shop/p/qasqir-7-zarjadov-151706822/?c=750000000&sr=7&ref=shared_link",
         "video": "https://youtu.be/VI8Fz-SEX00?si=P8F96XtPURD0Ovxk",
         "photo": "qasqir.jpg",
-        "top": False
+        "top": False,
     },
     {
         "id": 8,
@@ -107,7 +107,7 @@ PRODUCTS = [
         "kaspi": "https://kaspi.kz/shop/p/batareja-saljutov-139027211-zalpov-25-130933581/?c=750000000&sr=17&ref=shared_link",
         "video": "https://youtu.be/b5_OL8Bc8Q4?si=jfb1_KSp-e-TgL8i",
         "photo": "batareinyi_feierverk.jpg",
-        "top": False
+        "top": False,
     },
     {
         "id": 9,
@@ -118,16 +118,20 @@ PRODUCTS = [
         "kaspi": "https://kaspi.kz/shop/p/ayp-batareja-saljutov-ayp02016-zalpov-16-151821152/?c=750000000&sr=2&ref=shared_link",
         "video": "https://youtu.be/hKzkTwgUlFU?si=H3jqPyipr6y7MhuY",
         "photo": "qar_ui.jpg",
-        "top": False
-    }
+        "top": False,
+    },
 ]
+
+
+def file_exists(path: str) -> bool:
+    return bool(path and os.path.exists(path))
 
 
 def get_product_by_id(product_id: int):
     return next((p for p in PRODUCTS if p["id"] == product_id), None)
 
 
-def filter_by_budget(min_price: int, max_price: int):
+def filter_by_price(min_price: int, max_price: int):
     return [p for p in PRODUCTS if min_price <= p["price"] <= max_price]
 
 
@@ -142,11 +146,11 @@ def top_products():
 def main_menu():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("🔥 Каталог", callback_data="catalog")],
-        [InlineKeyboardButton("💰 По бюджету", callback_data="budget_menu")],
+        [InlineKeyboardButton("💰 По цене", callback_data="price_menu")],
         [InlineKeyboardButton("🎆 По залпам", callback_data="shots_menu")],
         [InlineKeyboardButton("⭐ Топ", callback_data="top")],
         [InlineKeyboardButton("📍 Как нас найти", callback_data="location")],
-        [InlineKeyboardButton("📞 Связаться", callback_data="contact")]
+        [InlineKeyboardButton("📞 Связаться", callback_data="contact")],
     ])
 
 
@@ -161,19 +165,19 @@ def products_menu(products, back_callback="home"):
         ])
     rows.append([
         InlineKeyboardButton("⬅️ Назад", callback_data=back_callback),
-        InlineKeyboardButton("🏠 Домой", callback_data="home")
+        InlineKeyboardButton("🏠 Домой", callback_data="home"),
     ])
     return InlineKeyboardMarkup(rows)
 
 
-def budget_menu():
+def price_menu():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("До 5 000₸", callback_data="budget|0|5000")],
-        [InlineKeyboardButton("5 000 – 10 000₸", callback_data="budget|5000|10000")],
-        [InlineKeyboardButton("10 000 – 20 000₸", callback_data="budget|10000|20000")],
-        [InlineKeyboardButton("20 000 – 40 000₸", callback_data="budget|20000|40000")],
-        [InlineKeyboardButton("40 000₸ и выше", callback_data="budget|40000|999999")],
-        [InlineKeyboardButton("🏠 Домой", callback_data="home")]
+        [InlineKeyboardButton("До 5 000₸", callback_data="price|0|5000")],
+        [InlineKeyboardButton("5 000 – 10 000₸", callback_data="price|5000|10000")],
+        [InlineKeyboardButton("10 000 – 20 000₸", callback_data="price|10000|20000")],
+        [InlineKeyboardButton("20 000 – 40 000₸", callback_data="price|20000|40000")],
+        [InlineKeyboardButton("40 000₸ и выше", callback_data="price|40000|999999")],
+        [InlineKeyboardButton("🏠 Домой", callback_data="home")],
     ])
 
 
@@ -183,22 +187,22 @@ def shots_menu():
         [InlineKeyboardButton("11 – 25 залпов", callback_data="shots|11|25")],
         [InlineKeyboardButton("26 – 50 залпов", callback_data="shots|26|50")],
         [InlineKeyboardButton("51 и больше", callback_data="shots|51|999")],
-        [InlineKeyboardButton("🏠 Домой", callback_data="home")]
+        [InlineKeyboardButton("🏠 Домой", callback_data="home")],
     ])
 
 
 def location_menu():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("📍 Открыть в 2GIS", url=SHOP_2GIS)],
-        [InlineKeyboardButton("🏠 Домой", callback_data="home")]
+        [InlineKeyboardButton("🏠 Домой", callback_data="home")],
     ])
 
 
 def contact_menu():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("📞 Позвонить", url=SHOP_PHONE_LINK)],
+        [InlineKeyboardButton("📞 Позвонить / написать", url=SHOP_PHONE_LINK)],
         [InlineKeyboardButton("💬 WhatsApp", url=SHOP_WHATSAPP)],
-        [InlineKeyboardButton("🏠 Домой", callback_data="home")]
+        [InlineKeyboardButton("🏠 Домой", callback_data="home")],
     ])
 
 
@@ -210,44 +214,43 @@ def product_buttons(product, back_callback="catalog"):
         rows.append([InlineKeyboardButton("🎥 Смотреть видео", url=product["video"])])
     rows.append([
         InlineKeyboardButton("⬅️ Назад", callback_data=back_callback),
-        InlineKeyboardButton("🏠 Домой", callback_data="home")
+        InlineKeyboardButton("🏠 Домой", callback_data="home"),
     ])
     return InlineKeyboardMarkup(rows)
 
 
-def file_exists(path: str):
-    return bool(path and os.path.exists(path))
-
-
-async def edit_text_fallback(query, text: str, reply_markup):
+async def edit_text_safe(query, text: str, reply_markup):
     try:
         await query.edit_message_text(text=text, reply_markup=reply_markup)
-    except:
+    except Exception:
         await query.message.reply_text(text=text, reply_markup=reply_markup)
 
 
-async def edit_photo_or_text(query, photo_path: str, caption: str, reply_markup):
-    if file_exists(photo_path):
+async def edit_photo_safe(query, photo_path: str, caption: str, reply_markup):
+    if not file_exists(photo_path):
+        await edit_text_safe(query, caption, reply_markup)
+        return
+
+    try:
+        with open(photo_path, "rb") as photo:
+            media = InputMediaPhoto(media=photo, caption=caption)
+            await query.edit_message_media(media=media, reply_markup=reply_markup)
+    except Exception:
         try:
-            with open(photo_path, "rb") as photo:
-                media = InputMediaPhoto(media=photo, caption=caption)
-                await query.edit_message_media(media=media, reply_markup=reply_markup)
-            return
-        except:
+            await query.edit_message_caption(caption=caption, reply_markup=reply_markup)
+        except Exception:
             try:
-                await query.edit_message_caption(caption=caption, reply_markup=reply_markup)
-                return
-            except:
-                pass
-
-    await edit_text_fallback(query, caption, reply_markup)
+                with open(photo_path, "rb") as photo:
+                    await query.message.reply_photo(photo=photo, caption=caption, reply_markup=reply_markup)
+            except Exception:
+                await query.message.reply_text(text=caption, reply_markup=reply_markup)
 
 
-async def show_home_from_callback(query):
+async def show_home_callback(query):
     if file_exists(BANNER_FILE):
-        await edit_photo_or_text(query, BANNER_FILE, SHOP_TEXT, main_menu())
+        await edit_photo_safe(query, BANNER_FILE, SHOP_TEXT, main_menu())
     else:
-        await edit_text_fallback(query, SHOP_TEXT, main_menu())
+        await edit_text_safe(query, SHOP_TEXT, main_menu())
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -264,30 +267,30 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = query.data
 
     if data == "home":
-        await show_home_from_callback(query)
+        await show_home_callback(query)
         return
 
     if data == "catalog":
-        await edit_text_fallback(query, "🔥 Каталог товаров:", products_menu(PRODUCTS, "home"))
+        await edit_text_safe(query, "🔥 Каталог товаров:", products_menu(PRODUCTS, "home"))
         return
 
-    if data == "budget_menu":
-        await edit_text_fallback(query, "💰 Выберите бюджет:", budget_menu())
+    if data == "price_menu":
+        await edit_text_safe(query, "💰 Выберите диапазон цены:", price_menu())
         return
 
-    if data.startswith("budget|"):
+    if data.startswith("price|"):
         _, min_price, max_price = data.split("|")
-        items = filter_by_budget(int(min_price), int(max_price))
+        items = filter_by_price(int(min_price), int(max_price))
 
         if not items:
-            await edit_text_fallback(query, "По этому бюджету товаров пока нет.", budget_menu())
+            await edit_text_safe(query, "По этой цене товаров пока нет.", price_menu())
             return
 
-        await edit_text_fallback(query, "💰 Подходящие варианты:", products_menu(items, "budget_menu"))
+        await edit_text_safe(query, "💰 Подходящие варианты:", products_menu(items, "price_menu"))
         return
 
     if data == "shots_menu":
-        await edit_text_fallback(query, "🎆 Выберите количество залпов:", shots_menu())
+        await edit_text_safe(query, "🎆 Выберите количество залпов:", shots_menu())
         return
 
     if data.startswith("shots|"):
@@ -295,24 +298,24 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         items = filter_by_shots(int(min_shots), int(max_shots))
 
         if not items:
-            await edit_text_fallback(query, "По этому количеству залпов товаров пока нет.", shots_menu())
+            await edit_text_safe(query, "По этому количеству залпов товаров пока нет.", shots_menu())
             return
 
-        await edit_text_fallback(query, "🎆 Подходящие варианты:", products_menu(items, "shots_menu"))
+        await edit_text_safe(query, "🎆 Подходящие варианты:", products_menu(items, "shots_menu"))
         return
 
     if data == "top":
-        await edit_text_fallback(query, "⭐ Топ товары:", products_menu(top_products(), "home"))
+        await edit_text_safe(query, "⭐ Топ товары:", products_menu(top_products(), "home"))
         return
 
     if data == "location":
         text = f"📍 Наш магазин\n\n{SHOP_ADDRESS_TEXT}\n\nНажмите кнопку ниже:"
-        await edit_text_fallback(query, text, location_menu())
+        await edit_text_safe(query, text, location_menu())
         return
 
     if data == "contact":
         text = f"📞 Связаться с нами\n\n{SHOP_PHONE}\n\nВыберите удобный способ:"
-        await edit_text_fallback(query, text, contact_menu())
+        await edit_text_safe(query, text, contact_menu())
         return
 
     if data.startswith("product_"):
@@ -320,7 +323,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         product = get_product_by_id(product_id)
 
         if not product:
-            await edit_text_fallback(query, "Товар не найден.", main_menu())
+            await edit_text_safe(query, "Товар не найден.", main_menu())
             return
 
         caption = (
@@ -330,25 +333,24 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f'📏 Калибр: {product["caliber"]}'
         )
 
-        await edit_photo_or_text(
-            query,
-            product.get("photo", ""),
-            caption,
-            product_buttons(product, "catalog")
-        )
+        await edit_photo_safe(query, product.get("photo", ""), caption, product_buttons(product, "catalog"))
         return
+
+
+async def post_init(application: Application):
+    await application.bot.delete_webhook(drop_pending_updates=True)
 
 
 def main():
     if not BOT_TOKEN or BOT_TOKEN == "ВСТАВЬ_СЮДА_СВОЙ_ТОКЕН":
         raise ValueError("Не вставлен BOT_TOKEN")
 
-    app = Application.builder().token(BOT_TOKEN).build()
+    app = Application.builder().token(BOT_TOKEN).post_init(post_init).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(buttons))
 
     print("Бот запущен...")
-    app.run_polling(drop_pending_updates=True)
+    app.run_polling(drop_pending_updates=True, close_loop=False)
 
 
 if __name__ == "__main__":
